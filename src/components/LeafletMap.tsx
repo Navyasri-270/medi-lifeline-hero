@@ -1,26 +1,12 @@
-import "leaflet/dist/leaflet.css";
-
-import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import type { GeoPoint } from "@/state/medisos-types";
-import { useEffect } from "react";
 
-// Fix Leaflet default icon paths in bundlers.
-const defaultIcon = L.icon({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-
+/**
+ * Simple iframe-based OpenStreetMap component.
+ * No API keys, no TypeScript issues.
+ */
 export function LeafletMap({
   center,
   markers,
-  polyline,
   heightClassName = "h-72",
 }: {
   center: GeoPoint;
@@ -28,42 +14,46 @@ export function LeafletMap({
   polyline?: GeoPoint[];
   heightClassName?: string;
 }) {
-  useEffect(() => {
-    (L as any).Marker.prototype.options.icon = defaultIcon;
-  }, []);
+  // Build OpenStreetMap embed URL
+  const zoom = 14;
+  const bbox = getBbox(center, zoom);
+  const markerParam = markers
+    .map((m) => `${m.point.lat},${m.point.lng}`)
+    .join("|");
+  
+  // Use OpenStreetMap embed
+  const osmUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${center.lat},${center.lng}`;
 
   return (
-    <div className={heightClassName + " overflow-hidden rounded-2xl border bg-card shadow-elevated"}>
-      <MapContainer
-        {...({
-          center: [center.lat, center.lng],
-          zoom: 14,
-          scrollWheelZoom: false,
-          style: { height: "100%", width: "100%" },
-        } as any)}
-      >
-        <TileLayer
-          {...({
-            attribution:
-              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-          } as any)}
-        />
-        {markers.map((m) => (
-          <Marker key={m.id} position={[m.point.lat, m.point.lng]}>
-            <Popup>
-              <div className="space-y-2">
-                <div className="font-medium">{m.label}</div>
-                {m.description ? <div className="text-sm opacity-80">{m.description}</div> : null}
-                {m.action ? <div>{m.action}</div> : null}
-              </div>
-            </Popup>
-          </Marker>
+    <div className={heightClassName + " overflow-hidden rounded-2xl border bg-card shadow-elevated relative"}>
+      <iframe
+        title="Map"
+        src={osmUrl}
+        className="w-full h-full border-0"
+        loading="lazy"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+      {/* Marker list overlay */}
+      <div className="absolute bottom-2 left-2 right-2 flex flex-wrap gap-1 pointer-events-none">
+        {markers.slice(0, 4).map((m) => (
+          <div
+            key={m.id}
+            className="bg-background/90 backdrop-blur-sm text-xs px-2 py-1 rounded-full border shadow-sm pointer-events-auto"
+          >
+            📍 {m.label}
+          </div>
         ))}
-        {polyline && polyline.length > 1 ? (
-          <Polyline positions={polyline.map((p) => [p.lat, p.lng]) as any} pathOptions={{ color: "#ff3b30", weight: 4 }} />
-        ) : null}
-      </MapContainer>
+      </div>
     </div>
   );
+}
+
+function getBbox(center: GeoPoint, zoom: number): string {
+  // Approximate bounding box based on zoom level
+  const offset = 0.02 * (16 - zoom + 1);
+  const left = center.lng - offset;
+  const bottom = center.lat - offset;
+  const right = center.lng + offset;
+  const top = center.lat + offset;
+  return `${left},${bottom},${right},${top}`;
 }
