@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { MobilePage } from "@/components/MobileShell";
 import { SOSButton } from "@/components/SOSButton";
+import { VoiceFeedback } from "@/components/VoiceFeedback";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useVoiceSosTrigger } from "@/hooks/useVoiceSosTrigger";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import { useSeo } from "@/lib/seo";
-import { Mic, Navigation, PhoneCall, Siren } from "lucide-react";
+import { Navigation, PhoneCall, Siren } from "lucide-react";
 
 export default function Home() {
   useSeo({
@@ -30,7 +31,7 @@ export default function Home() {
   const voice = useVoiceSosTrigger({
     enabled: settings.voiceSosEnabled && handsFreeStarted,
     onTrigger: (phrase) => {
-      toast({ title: "Voice trigger detected", description: `Heard: “${phrase}”` });
+      toast({ title: "Voice trigger detected", description: `Heard: "${phrase}"` });
       speak("Emergency detected. Starting SOS.");
       logSos({ severity: "critical", location: point ?? undefined });
       nav("/sos");
@@ -75,15 +76,14 @@ export default function Home() {
             <CardTitle className="text-lg">{profile.name || "Guest"}</CardTitle>
             <p className="text-sm text-muted-foreground">Default contacts: {defaultContactNames}</p>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent className="pt-0 space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-2xl border bg-accent p-3">
               <div className="space-y-0.5">
-                <div className="flex items-center gap-2 text-sm font-medium">
-                  <Mic className="h-4 w-4" />
+                <div className="text-sm font-medium">
                   Hands‑free Voice SOS
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Browser requires one tap to allow microphone.
+                  Tap Start, then say trigger words
                 </p>
               </div>
               <Switch
@@ -92,10 +92,11 @@ export default function Home() {
                 aria-label="Enable voice SOS"
               />
             </div>
-            <div className="mt-3 flex items-center justify-between gap-2">
+
+            <div className="flex items-center gap-2">
               <Button
                 variant="secondary"
-                className="w-full"
+                className="flex-1"
                 onClick={() => {
                   setHandsFreeStarted(true);
                   toast({ title: "Hands‑free started", description: "Say: Help / SOS / Emergency" });
@@ -106,7 +107,7 @@ export default function Home() {
               </Button>
               <Button
                 variant="outline"
-                className="w-full"
+                className="flex-1"
                 onClick={() => {
                   setHandsFreeStarted(false);
                   voice.stop();
@@ -115,10 +116,14 @@ export default function Home() {
                 Stop
               </Button>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Status: {voice.supported ? (voice.listening ? "Listening…" : "Idle") : "Not supported on this device"}
-              {voice.error ? ` • ${voice.error}` : ""}
-            </p>
+
+            {/* Voice SOS Visual Feedback */}
+            <VoiceFeedback
+              listening={voice.listening}
+              supported={voice.supported}
+              lastTranscript={voice.lastTranscript}
+              error={voice.error}
+            />
           </CardContent>
         </Card>
 
