@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MobilePage } from "@/components/MobileShell";
 import { LeafletMap } from "@/components/LeafletMap";
+import { HospitalAcknowledgment } from "@/components/HospitalAcknowledgment";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useToast } from "@/hooks/use-toast";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
@@ -105,8 +106,11 @@ export default function SosActive() {
             { id: "me", point: me, label: "Patient", description: "Live location" },
             ...hospitals.slice(0, 3).map((h) => ({ id: h.id, point: h.location, label: h.name, description: h.address })),
           ]}
-          heightClassName="h-[22rem]"
+          heightClassName="h-[20rem]"
+          trackUser={true}
         />
+
+        <HospitalAcknowledgment hospitals={hospitals} />
 
         <Card className="shadow-elevated">
           <CardHeader className="pb-3">
