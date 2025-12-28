@@ -14,7 +14,198 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      emergency_contacts: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          name: string
+          notify_sms: boolean | null
+          phone: string
+          relationship: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name: string
+          notify_sms?: boolean | null
+          phone: string
+          relationship?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          notify_sms?: boolean | null
+          phone?: string
+          relationship?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      health_reports: {
+        Row: {
+          created_at: string
+          file_type: string
+          file_url: string
+          id: string
+          is_emergency_accessible: boolean | null
+          name: string
+          notes: string | null
+          report_date: string
+          report_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          file_type: string
+          file_url: string
+          id?: string
+          is_emergency_accessible?: boolean | null
+          name: string
+          notes?: string | null
+          report_date?: string
+          report_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          file_type?: string
+          file_url?: string
+          id?: string
+          is_emergency_accessible?: boolean | null
+          name?: string
+          notes?: string | null
+          report_date?: string
+          report_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          allergies: string[] | null
+          avatar_type: string | null
+          avatar_url: string | null
+          blood_group: string | null
+          chronic_conditions: string[] | null
+          created_at: string
+          id: string
+          language: string | null
+          medications: string[] | null
+          name: string | null
+          phone: string | null
+          updated_at: string
+          work_mode_enabled: boolean | null
+          work_mode_end_hour: number | null
+          work_mode_start_hour: number | null
+        }
+        Insert: {
+          age?: number | null
+          allergies?: string[] | null
+          avatar_type?: string | null
+          avatar_url?: string | null
+          blood_group?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          id: string
+          language?: string | null
+          medications?: string[] | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string
+          work_mode_enabled?: boolean | null
+          work_mode_end_hour?: number | null
+          work_mode_start_hour?: number | null
+        }
+        Update: {
+          age?: number | null
+          allergies?: string[] | null
+          avatar_type?: string | null
+          avatar_url?: string | null
+          blood_group?: string | null
+          chronic_conditions?: string[] | null
+          created_at?: string
+          id?: string
+          language?: string | null
+          medications?: string[] | null
+          name?: string | null
+          phone?: string | null
+          updated_at?: string
+          work_mode_enabled?: boolean | null
+          work_mode_end_hour?: number | null
+          work_mode_start_hour?: number | null
+        }
+        Relationships: []
+      }
+      sos_logs: {
+        Row: {
+          contacts_notified: string[] | null
+          created_at: string
+          id: string
+          latitude: number | null
+          longitude: number | null
+          severity: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          contacts_notified?: string[] | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          severity: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          contacts_notified?: string[] | null
+          created_at?: string
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          severity?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      symptom_checks: {
+        Row: {
+          ai_response: string | null
+          created_at: string
+          follow_up_questions: Json | null
+          id: string
+          symptoms: string
+          urgency_level: string | null
+          user_id: string | null
+        }
+        Insert: {
+          ai_response?: string | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          symptoms: string
+          urgency_level?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          ai_response?: string | null
+          created_at?: string
+          follow_up_questions?: Json | null
+          id?: string
+          symptoms?: string
+          urgency_level?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

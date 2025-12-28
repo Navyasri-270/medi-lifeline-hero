@@ -5,7 +5,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import NotFound from "@/pages/NotFound";
 import Index from "@/pages/Index";
+import Auth from "@/pages/Auth";
 import { MediSOSProvider } from "@/state/MediSOSProvider";
+import { AuthProvider } from "@/hooks/useAuth";
+import { I18nProvider } from "@/i18n/I18nProvider";
 import { BottomTabsNav } from "@/components/BottomTabsNav";
 
 import Home from "@/pages/Home";
@@ -32,60 +35,64 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <MediSOSProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route
-              path="/home"
-              element={
-                <TabsLayout>
-                  <Home />
-                </TabsLayout>
-              }
-            />
-            <Route
-              path="/symptom"
-              element={
-                <TabsLayout>
-                  <Symptom />
-                </TabsLayout>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <TabsLayout>
-                  <Profile />
-                </TabsLayout>
-              }
-            />
-            <Route
-              path="/contacts"
-              element={
-                <TabsLayout>
-                  <Contacts />
-                </TabsLayout>
-              }
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <TabsLayout>
-                  <Dashboard />
-                </TabsLayout>
-              }
-            />
+      <I18nProvider>
+        <AuthProvider>
+          <MediSOSProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route
+                  path="/home"
+                  element={
+                    <TabsLayout>
+                      <Home />
+                    </TabsLayout>
+                  }
+                />
+                <Route
+                  path="/symptom"
+                  element={
+                    <TabsLayout>
+                      <Symptom />
+                    </TabsLayout>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <TabsLayout>
+                      <Profile />
+                    </TabsLayout>
+                  }
+                />
+                <Route
+                  path="/contacts"
+                  element={
+                    <TabsLayout>
+                      <Contacts />
+                    </TabsLayout>
+                  }
+                />
+                <Route
+                  path="/dashboard"
+                  element={
+                    <TabsLayout>
+                      <Dashboard />
+                    </TabsLayout>
+                  }
+                />
 
-            <Route path="/map" element={<MapHospitals />} />
-            <Route path="/sos" element={<SosActive />} />
-            <Route path="/start" element={<Navigate to="/home" replace />} />
+                <Route path="/map" element={<MapHospitals />} />
+                <Route path="/sos" element={<SosActive />} />
+                <Route path="/start" element={<Navigate to="/home" replace />} />
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </MediSOSProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </MediSOSProvider>
+        </AuthProvider>
+      </I18nProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
