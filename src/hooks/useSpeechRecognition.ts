@@ -1,6 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-
-type SR = typeof window extends any ? any : never;
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export type SpeechState = {
   supported: boolean;
@@ -20,72 +18,79 @@ export function useSpeechRecognition({
   lang: string;
   onFinal?: (text: string) => void;
 }) {
-  const Recognition: SR | undefined =
-    typeof window !== "undefined" ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition : undefined;
+  const Recognition =
+    typeof window !== "undefined"
+      ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      : undefined;
 
   const supported = !!Recognition;
-  const recRef = useRef<any | null>(null);
+  const recRef = useRef<any>(null);
   const [listening, setListening] = useState(false);
   const [lastTranscript, setLastTranscript] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const restartGuard = useRef(false);
+  const onFinalRef = useRef(onFinal);
 
-  const setup = useCallback(() => {
-    if (!supported) return null;
-    const rec = new Recognition();
-    rec.continuous = continuous;
-    rec.interimResults = interimResults;
-    rec.lang = lang;
-
-    rec.onstart = () => {
-      setError(undefined);
-      setListening(true);
-    };
-
-    rec.onresult = (event: any) => {
-      let interim = "";
-      let finalText = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const res = event.results[i];
-        const text = (res[0]?.transcript ?? "").trim();
-        if (res.isFinal) finalText += (finalText ? " " : "") + text;
-        else interim += (interim ? " " : "") + text;
-      }
-      const combined = (finalText || interim).trim();
-      if (combined) setLastTranscript(combined);
-      if (finalText && onFinal) onFinal(finalText.trim());
-    };
-
-    rec.onerror = (e: any) => {
-      setError(e?.error || "Speech error");
-    };
-
-    rec.onend = () => {
-      setListening(false);
-      if (continuous && restartGuard.current) {
-        // Allow a controlled restart loop to keep hands-free mode alive.
-        try {
-          rec.start();
-          setListening(true);
-        } catch {
-          // ignore
-        }
-      }
-    };
-
-    return rec;
-  }, [Recognition, continuous, interimResults, lang, onFinal, supported]);
+  // Keep onFinal ref updated
+  useEffect(() => {
+    onFinalRef.current = onFinal;
+  }, [onFinal]);
 
   const start = useCallback(() => {
-    if (!supported) return;
-    if (!recRef.current) recRef.current = setup();
+    if (!supported || !Recognition) return;
+
+    // Create new instance if needed
+    if (!recRef.current) {
+      const rec = new Recognition();
+      rec.continuous = continuous;
+      rec.interimResults = interimResults;
+      rec.lang = lang;
+
+      rec.onstart = () => {
+        setError(undefined);
+        setListening(true);
+      };
+
+      rec.onresult = (event: any) => {
+        let interim = "";
+        let finalText = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const res = event.results[i];
+          const text = (res[0]?.transcript ?? "").trim();
+          if (res.isFinal) finalText += (finalText ? " " : "") + text;
+          else interim += (interim ? " " : "") + text;
+        }
+        const combined = (finalText || interim).trim();
+        if (combined) setLastTranscript(combined);
+        if (finalText && onFinalRef.current) onFinalRef.current(finalText.trim());
+      };
+
+      rec.onerror = (e: any) => {
+        setError(e?.error || "Speech error");
+      };
+
+      rec.onend = () => {
+        setListening(false);
+        if (continuous && restartGuard.current) {
+          try {
+            rec.start();
+            setListening(true);
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      recRef.current = rec;
+    }
+
     restartGuard.current = true;
     try {
       recRef.current?.start();
     } catch {
       // Some browsers throw if start() called twice.
     }
-  }, [setup, supported]);
+  }, [Recognition, continuous, interimResults, lang, supported]);
 
   const stop = useCallback(() => {
     restartGuard.current = false;
@@ -99,8 +104,8 @@ export function useSpeechRecognition({
 
   useEffect(() => {
     return () => {
+      restartGuard.current = false;
       try {
-        restartGuard.current = false;
         recRef.current?.stop();
       } catch {
         // ignore
@@ -109,10 +114,5 @@ export function useSpeechRecognition({
     };
   }, []);
 
-  const state: SpeechState = useMemo(
-    () => ({ supported, listening, lastTranscript, error }),
-    [supported, listening, lastTranscript, error],
-  );
-
-  return { ...state, start, stop };
+  return { supported, listening, lastTranscript, error, start, stop };
 }
