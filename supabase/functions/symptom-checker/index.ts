@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,12 +37,70 @@ URGENCY LEVELS:
 
 Always include the medical disclaimer in your response.`;
 
+// Simple in-memory rate limiting (per user, resets on function restart)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 20; // requests per hour
+const RATE_LIMIT_WINDOW = 60 * 60 * 1000; // 1 hour in ms
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(userId);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.error('No authorization header provided');
+      return new Response(
+        JSON.stringify({ error: 'Authentication required' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create Supabase client with user's JWT
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Get authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Invalid authentication token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check rate limit
+    if (!checkRateLimit(user.id)) {
+      console.log('Rate limit exceeded for user:', user.id);
+      return new Response(
+        JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { symptoms, age, medicalHistory, followUpAnswers } = await req.json();
     
     if (!symptoms) {
@@ -65,7 +124,7 @@ serve(async (req) => {
     if (medicalHistory) userMessage += `\nMedical history: ${medicalHistory}`;
     if (followUpAnswers) userMessage += `\nAdditional information: ${JSON.stringify(followUpAnswers)}`;
 
-    console.log('Analyzing symptoms:', userMessage);
+    console.log('User:', user.id, '- Analyzing symptoms:', userMessage.substring(0, 100));
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -132,7 +191,7 @@ serve(async (req) => {
       };
     }
 
-    console.log('Analysis complete:', parsedResponse.urgency);
+    console.log('User:', user.id, '- Analysis complete:', parsedResponse.urgency);
 
     return new Response(
       JSON.stringify(parsedResponse),
