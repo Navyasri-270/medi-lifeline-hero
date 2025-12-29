@@ -10,6 +10,7 @@ import { MediSOSProvider } from "@/state/MediSOSProvider";
 import { AuthProvider } from "@/hooks/useAuth";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { BottomTabsNav } from "@/components/BottomTabsNav";
+import { OfflineBanner } from "@/components/OfflineBanner";
 
 import Home from "@/pages/Home";
 import Symptom from "@/pages/Symptom";
@@ -24,6 +25,7 @@ const queryClient = new QueryClient();
 function TabsLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh">
+      <OfflineBanner />
       {children}
       <BottomTabsNav />
     </div>
