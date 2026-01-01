@@ -7,12 +7,15 @@ import { Switch } from "@/components/ui/switch";
 import { MobilePage } from "@/components/MobileShell";
 import { SOSButton } from "@/components/SOSButton";
 import { VoiceFeedback } from "@/components/VoiceFeedback";
+import { EmergencyTypeSelector, type EmergencyType, getEmergencyLabel } from "@/components/EmergencyTypeSelector";
+import { WorkModeToggle } from "@/components/WorkModeToggle";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useVoiceSosTrigger } from "@/hooks/useVoiceSosTrigger";
+import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import { useSeo } from "@/lib/seo";
-import { Navigation, PhoneCall, Siren } from "lucide-react";
+import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare } from "lucide-react";
 
 export default function Home() {
   useSeo({
@@ -25,8 +28,11 @@ export default function Home() {
   const { toast } = useToast();
   const { settings, setSettings, contacts, logSos, profile } = useMediSOS();
   const { point } = useGeolocation();
+  const { isOnline } = useNetworkStatus();
 
   const [handsFreeStarted, setHandsFreeStarted] = useState(false);
+  const [emergencyType, setEmergencyType] = useState<EmergencyType>("general");
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
 
   const voice = useVoiceSosTrigger({
     enabled: settings.voiceSosEnabled && handsFreeStarted,
@@ -39,21 +45,72 @@ export default function Home() {
     language: settings.language === "hi" ? "hi-IN" : settings.language === "te" ? "te-IN" : "en-IN",
   });
 
-  const defaultContactNames = useMemo(
-    () => contacts.filter((c) => c.isDefault).map((c) => c.name).join(", ") || "No default contacts",
-    [contacts],
+  const defaultContacts = useMemo(
+    () => contacts.filter((c) => c.isDefault),
+    [contacts]
   );
 
+  const defaultContactNames = useMemo(
+    () => defaultContacts.map((c) => c.name).join(", ") || "No default contacts",
+    [defaultContacts],
+  );
+
+  const primaryContact = defaultContacts[0];
+
+  // Generate Google Maps link for SMS
+  const mapsLink = useMemo(() => {
+    if (!point) return null;
+    return `https://maps.google.com/maps?q=${point.lat},${point.lng}`;
+  }, [point]);
+
   const notifyContacts = () => {
+    const message = `🆘 EMERGENCY: ${profile.name || "User"} needs help!\n📍 ${mapsLink || "Location pending"}\n⏰ ${new Date().toLocaleTimeString()}`;
+    
     toast({
-      title: "Contacts notified (demo)",
-      description: settings.smsOnSos ? `SMS: ${defaultContactNames}` : `Push: ${defaultContactNames}`,
+      title: isOnline ? "SMS Alert Sent (Demo)" : "Offline SMS Queued",
+      description: `To: ${defaultContactNames}`,
     });
-    navigator.vibrate?.([120, 80, 120]);
+    
+    // Vibrate pattern for work mode vs normal
+    if (settings.workModeEnabled) {
+      navigator.vibrate?.([100]);
+    } else {
+      navigator.vibrate?.([200, 100, 200, 100, 200]);
+    }
+  };
+
+  const autoCallPrimary = () => {
+    if (primaryContact) {
+      window.location.href = `tel:${primaryContact.phone}`;
+    } else {
+      window.location.href = "tel:108";
+    }
   };
 
   const call108 = () => {
     window.location.href = "tel:108";
+  };
+
+  const triggerSOS = () => {
+    logSos({ 
+      severity: "critical", 
+      location: point ?? undefined,
+      contactsNotified: defaultContacts.map(c => c.name),
+    });
+    notifyContacts();
+    speak(settings.workModeEnabled ? "" : "SOS triggered. Help is on the way.");
+    
+    // Auto-call primary contact after short delay
+    setTimeout(() => {
+      if (primaryContact && !settings.workModeEnabled) {
+        toast({ 
+          title: "Calling Primary Contact", 
+          description: primaryContact.name 
+        });
+      }
+    }, 1500);
+    
+    nav("/sos", { state: { emergencyType } });
   };
 
   return (
@@ -71,10 +128,31 @@ export default function Home() {
       }
     >
       <section className="space-y-4">
+        {/* Offline Indicator */}
+        {!isOnline && (
+          <Card className="bg-amber-500/10 border-amber-500/30">
+            <CardContent className="py-3 flex items-center gap-3">
+              <WifiOff className="h-5 w-5 text-amber-600" />
+              <div>
+                <p className="font-medium text-amber-700">Offline Mode</p>
+                <p className="text-xs text-amber-600">SMS fallback will be used for alerts</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Work Mode Toggle */}
+        <WorkModeToggle 
+          enabled={settings.workModeEnabled || false}
+          onToggle={(enabled) => setSettings({ ...settings, workModeEnabled: enabled })}
+          startHour={settings.workModeStartHour}
+          endHour={settings.workModeEndHour}
+        />
+
         <Card className="shadow-elevated">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{profile.name || "Guest"}</CardTitle>
-            <p className="text-sm text-muted-foreground">Default contacts: {defaultContactNames}</p>
+            <p className="text-sm text-muted-foreground">Primary: {primaryContact?.name || "None set"}</p>
           </CardHeader>
           <CardContent className="pt-0 space-y-3">
             <div className="flex items-center justify-between gap-3 rounded-2xl border bg-accent p-3">
@@ -130,29 +208,35 @@ export default function Home() {
         <div className="py-3">
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <div className="mx-auto">
+              <div className="mx-auto" onClick={() => setShowTypeSelector(true)}>
                 <SOSButton onClick={() => {}} />
               </div>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-sm">
               <AlertDialogHeader>
-                <AlertDialogTitle>Trigger SOS?</AlertDialogTitle>
+                <AlertDialogTitle>Select Emergency Type</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to send an emergency alert? This demo will open the SOS Active screen.
+                  Choose the type of emergency for faster response
                 </AlertDialogDescription>
               </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+              
+              <EmergencyTypeSelector
+                selected={emergencyType}
+                onSelect={setEmergencyType}
+              />
+
+              <p className="text-xs text-center text-muted-foreground mt-2">
+                Selected: {getEmergencyLabel(emergencyType)}
+              </p>
+
+              <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
                 <AlertDialogAction
-                  onClick={() => {
-                    logSos({ severity: "critical", location: point ?? undefined });
-                    notifyContacts();
-                    speak("SOS triggered. Help is on the way.");
-                    nav("/sos");
-                  }}
+                  onClick={triggerSOS}
+                  className="w-full bg-destructive hover:bg-destructive/90"
                 >
-                  Confirm
+                  Confirm SOS
                 </AlertDialogAction>
+                <AlertDialogCancel className="w-full">Cancel</AlertDialogCancel>
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
@@ -167,13 +251,33 @@ export default function Home() {
               <PhoneCall className="h-4 w-4" /> Call 108
             </Button>
             <Button variant="soft" size="xl" onClick={notifyContacts}>
-              Notify Contacts
+              <MessageSquare className="h-4 w-4" /> Alert Contacts
             </Button>
           </div>
+          {primaryContact && (
+            <Button 
+              variant="sos" 
+              size="xl" 
+              onClick={autoCallPrimary}
+              className="animate-pulse"
+            >
+              <PhoneCall className="h-4 w-4" /> Call {primaryContact.name}
+            </Button>
+          )}
         </section>
 
-        <p className="text-xs text-muted-foreground">
-          Location: {point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : "Waiting for GPS…"}
+        <p className="text-xs text-muted-foreground text-center">
+          📍 {point ? `${point.lat.toFixed(4)}, ${point.lng.toFixed(4)}` : "Waiting for GPS…"}
+          {mapsLink && (
+            <a 
+              href={mapsLink} 
+              target="_blank" 
+              rel="noopener" 
+              className="ml-2 text-primary underline"
+            >
+              View on Maps
+            </a>
+          )}
         </p>
       </section>
     </MobilePage>

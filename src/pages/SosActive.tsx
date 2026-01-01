@@ -1,16 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MobilePage } from "@/components/MobileShell";
 import { LeafletMap } from "@/components/LeafletMap";
 import { HospitalAcknowledgment } from "@/components/HospitalAcknowledgment";
+import { LiveTrackingLink } from "@/components/LiveTrackingLink";
+import { SMSAlertSimulator } from "@/components/SMSAlertSimulator";
+import { AmbulanceTracker } from "@/components/AmbulanceTracker";
+import { getEmergencyLabel, type EmergencyType } from "@/components/EmergencyTypeSelector";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useToast } from "@/hooks/use-toast";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import type { GeoPoint } from "@/state/medisos-types";
 import { useSeo } from "@/lib/seo";
-import { PhoneCall, Send, X } from "lucide-react";
+import { PhoneCall, Send, X, AlertTriangle } from "lucide-react";
 
 function nearest(from: GeoPoint, points: GeoPoint[]) {
   let best = points[0];
@@ -35,10 +39,13 @@ export default function SosActive() {
   });
 
   const nav = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-  const { contacts, hospitals, settings } = useMediSOS();
+  const { contacts, hospitals, settings, profile } = useMediSOS();
   const { point } = useGeolocation();
   const [seconds, setSeconds] = useState(20);
+  
+  const emergencyType = (location.state?.emergencyType as EmergencyType) || "general";
 
   useEffect(() => {
     const t = window.setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000);
@@ -46,8 +53,10 @@ export default function SosActive() {
   }, []);
 
   useEffect(() => {
-    navigator.vibrate?.([220, 120, 220]);
-  }, []);
+    if (!settings.workModeEnabled) {
+      navigator.vibrate?.([220, 120, 220]);
+    }
+  }, [settings.workModeEnabled]);
 
   const me = point ?? { lat: 17.385044, lng: 78.486671 };
   const polyline = useMemo(() => {
@@ -57,9 +66,15 @@ export default function SosActive() {
 
   const defaultContacts = useMemo(() => contacts.filter((c) => c.isDefault), [contacts]);
 
+  const handleCallContact = (phone: string) => {
+    window.location.href = `tel:${phone}`;
+  };
+
   const notify = () => {
     toast({ title: "Notified (demo)", description: settings.smsOnSos ? "SMS queued" : "Push queued" });
-    speak("Emergency contacts notified.");
+    if (!settings.workModeEnabled) {
+      speak("Emergency contacts notified.");
+    }
   };
 
   return (
@@ -72,15 +87,24 @@ export default function SosActive() {
       }
     >
       <section className="space-y-3">
-        <Card className="shadow-elevated">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Countdown</CardTitle>
-              <div className="text-2xl font-semibold tabular-nums text-primary">{seconds}s</div>
+        {/* Emergency Type Banner */}
+        <Card className="bg-destructive/10 border-destructive/30">
+          <CardContent className="py-3 flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <div>
+              <p className="font-semibold text-destructive">{getEmergencyLabel(emergencyType)}</p>
+              <p className="text-xs text-destructive/80">Emergency services alerted</p>
             </div>
-            <p className="text-sm text-muted-foreground">Demo: routing + notifications are placeholders.</p>
-          </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-2">
+            <div className="ml-auto text-2xl font-bold tabular-nums text-destructive">{seconds}s</div>
+          </CardContent>
+        </Card>
+
+        {/* Ambulance Tracker */}
+        <AmbulanceTracker isActive={true} />
+
+        {/* Action Buttons */}
+        <Card className="shadow-elevated">
+          <CardContent className="py-3 grid grid-cols-3 gap-2">
             <Button variant="outline" onClick={() => (window.location.href = "tel:108")}> 
               <PhoneCall className="h-4 w-4" /> 108
             </Button>
@@ -99,6 +123,10 @@ export default function SosActive() {
           </CardContent>
         </Card>
 
+        {/* Live Tracking Link */}
+        <LiveTrackingLink location={point} userName={profile.name} />
+
+        {/* Map */}
         <LeafletMap
           center={me}
           polyline={polyline}
@@ -106,32 +134,20 @@ export default function SosActive() {
             { id: "me", point: me, label: "Patient", description: "Live location" },
             ...hospitals.slice(0, 3).map((h) => ({ id: h.id, point: h.location, label: h.name, description: h.address })),
           ]}
-          heightClassName="h-[20rem]"
+          heightClassName="h-[16rem]"
           trackUser={true}
         />
 
-        <HospitalAcknowledgment hospitals={hospitals} />
+        {/* SMS Alert Preview */}
+        <SMSAlertSimulator
+          contacts={contacts}
+          location={point}
+          emergencyType={emergencyType}
+          userName={profile.name || "Guest"}
+          onCallContact={handleCallContact}
+        />
 
-        <Card className="shadow-elevated">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Contacts Notified</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {defaultContacts.length ? (
-              defaultContacts.map((c) => (
-                <div key={c.id} className="flex items-center justify-between rounded-2xl border bg-card p-3">
-                  <div>
-                    <div className="text-sm font-semibold">{c.name}</div>
-                    <div className="text-xs text-muted-foreground">{c.phone}</div>
-                  </div>
-                  <div className="text-xs text-muted-foreground">Queued</div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">No default contacts set.</p>
-            )}
-          </CardContent>
-        </Card>
+        <HospitalAcknowledgment hospitals={hospitals} />
       </section>
     </MobilePage>
   );

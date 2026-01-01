@@ -14,7 +14,7 @@ type MediSOSState = {
   deleteContact: (id: string) => void;
   setDefaultContact: (id: string) => void;
   setSettings: (next: Settings) => void;
-  logSos: (args: { severity: Severity; location?: GeoPoint }) => SosLog;
+  logSos: (args: { severity: Severity; location?: GeoPoint; contactsNotified?: string[] }) => SosLog;
 };
 
 const Ctx = createContext<MediSOSState | null>(null);
@@ -66,13 +66,15 @@ export function MediSOSProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logSos = useCallback(
-    ({ severity, location }: { severity: Severity; location?: GeoPoint }) => {
+    ({ severity, location, contactsNotified }: { severity: Severity; location?: GeoPoint; contactsNotified?: string[] }) => {
       const entry: SosLog = {
         id: safeId("log"),
         name: profile.name || "Guest",
         timeISO: new Date().toISOString(),
         severity,
         location,
+        contactsNotified,
+        status: "active",
       };
       setLogs((prev) => {
         const updated = [entry, ...prev];
