@@ -90,7 +90,7 @@ export const HOSPITALS_DATA: Omit<Hospital, "distance" | "eta" | "availability">
 ];
 
 // Calculate distance between two points in km
-function haversineDistance(
+export function haversineDistance(
   lat1: number, lng1: number, 
   lat2: number, lng2: number
 ): number {
