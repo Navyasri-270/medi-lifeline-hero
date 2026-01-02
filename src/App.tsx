@@ -11,6 +11,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { I18nProvider } from "@/i18n/I18nProvider";
 import { BottomTabsNav } from "@/components/BottomTabsNav";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 import Home from "@/pages/Home";
 import Symptom from "@/pages/Symptom";
@@ -19,6 +20,7 @@ import Contacts from "@/pages/Contacts";
 import Dashboard from "@/pages/Dashboard";
 import MapHospitals from "@/pages/MapHospitals";
 import SosActive from "@/pages/SosActive";
+import HealthReports from "@/pages/HealthReports";
 
 const queryClient = new QueryClient();
 
@@ -42,51 +44,87 @@ const App = () => (
           <MediSOSProvider>
             <BrowserRouter>
               <Routes>
+                {/* Public routes */}
                 <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
+                
+                {/* Protected routes */}
                 <Route
                   path="/home"
                   element={
-                    <TabsLayout>
-                      <Home />
-                    </TabsLayout>
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <Home />
+                      </TabsLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/symptom"
                   element={
-                    <TabsLayout>
-                      <Symptom />
-                    </TabsLayout>
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <Symptom />
+                      </TabsLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/profile"
                   element={
-                    <TabsLayout>
-                      <Profile />
-                    </TabsLayout>
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <Profile />
+                      </TabsLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/contacts"
                   element={
-                    <TabsLayout>
-                      <Contacts />
-                    </TabsLayout>
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <Contacts />
+                      </TabsLayout>
+                    </ProtectedRoute>
                   }
                 />
                 <Route
                   path="/dashboard"
                   element={
-                    <TabsLayout>
-                      <Dashboard />
-                    </TabsLayout>
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <Dashboard />
+                      </TabsLayout>
+                    </ProtectedRoute>
                   }
                 />
-
-                <Route path="/map" element={<MapHospitals />} />
-                <Route path="/sos" element={<SosActive />} />
+                <Route
+                  path="/health-reports"
+                  element={
+                    <ProtectedRoute>
+                      <TabsLayout>
+                        <HealthReports />
+                      </TabsLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/map"
+                  element={
+                    <ProtectedRoute>
+                      <MapHospitals />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/sos"
+                  element={
+                    <ProtectedRoute>
+                      <SosActive />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="/start" element={<Navigate to="/home" replace />} />
 
                 <Route path="*" element={<NotFound />} />

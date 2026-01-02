@@ -9,13 +9,15 @@ import { SOSButton } from "@/components/SOSButton";
 import { VoiceFeedback } from "@/components/VoiceFeedback";
 import { EmergencyTypeSelector, type EmergencyType, getEmergencyLabel } from "@/components/EmergencyTypeSelector";
 import { WorkModeToggle } from "@/components/WorkModeToggle";
+import { FallDetectionAlert } from "@/components/FallDetectionAlert";
 import { useToast } from "@/hooks/use-toast";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useVoiceSosTrigger } from "@/hooks/useVoiceSosTrigger";
 import { useNetworkStatus } from "@/hooks/useNetworkStatus";
+import { useFallDetection } from "@/hooks/useFallDetection";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import { useSeo } from "@/lib/seo";
-import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare } from "lucide-react";
+import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare, Activity, FileText } from "lucide-react";
 
 export default function Home() {
   useSeo({
@@ -33,6 +35,18 @@ export default function Home() {
   const [handsFreeStarted, setHandsFreeStarted] = useState(false);
   const [emergencyType, setEmergencyType] = useState<EmergencyType>("general");
   const [showTypeSelector, setShowTypeSelector] = useState(false);
+
+  // Fall detection integration
+  const fallDetection = useFallDetection(() => {
+    logSos({ 
+      severity: "critical", 
+      location: point ?? undefined,
+      contactsNotified: defaultContacts.map(c => c.name),
+    });
+    notifyContacts();
+    speak("Fall detected. Emergency SOS triggered.");
+    nav("/sos", { state: { emergencyType: "fall" } });
+  });
 
   const voice = useVoiceSosTrigger({
     enabled: settings.voiceSosEnabled && handsFreeStarted,
@@ -141,6 +155,49 @@ export default function Home() {
           </Card>
         )}
 
+        {/* Fall Detection Alert */}
+        <FallDetectionAlert
+          open={fallDetection.fallDetected}
+          countdown={fallDetection.countdown}
+          onCancel={fallDetection.cancelAlert}
+        />
+
+        {/* Fall Detection Toggle */}
+        <Card className="shadow-elevated border-primary/20">
+          <CardContent className="py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Activity className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Fall Detection</p>
+                  <p className="text-xs text-muted-foreground">
+                    {fallDetection.isSupported ? "Monitors for sudden falls" : "Simulated sensor mode"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={fallDetection.isEnabled}
+                  onCheckedChange={(v) => v ? fallDetection.enable() : fallDetection.disable()}
+                  aria-label="Enable fall detection"
+                />
+              </div>
+            </div>
+            {fallDetection.isEnabled && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full mt-3"
+                onClick={fallDetection.simulateFall}
+              >
+                🧪 Simulate Fall (Demo)
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Work Mode Toggle */}
         <WorkModeToggle 
           enabled={settings.workModeEnabled || false}
@@ -240,6 +297,34 @@ export default function Home() {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+        </div>
+
+        {/* Quick Access Cards */}
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/profile")}>
+            <CardContent className="py-4 text-center">
+              <Navigation className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Medical Profile</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/contacts")}>
+            <CardContent className="py-4 text-center">
+              <MessageSquare className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Contacts</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/health-reports")}>
+            <CardContent className="py-4 text-center">
+              <FileText className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Health Reports</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/map")}>
+            <CardContent className="py-4 text-center">
+              <Siren className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Live Map</p>
+            </CardContent>
+          </Card>
         </div>
 
         <section className="grid grid-cols-1 gap-3">
