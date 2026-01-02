@@ -71,10 +71,10 @@ export default function Home() {
 
   const primaryContact = defaultContacts[0];
 
-  // Generate Google Maps link for SMS
+  // Generate OpenStreetMap link for SMS
   const mapsLink = useMemo(() => {
     if (!point) return null;
-    return `https://maps.google.com/maps?q=${point.lat},${point.lng}`;
+    return `https://www.openstreetmap.org/?mlat=${point.lat}&mlon=${point.lng}#map=17/${point.lat}/${point.lng}`;
   }, [point]);
 
   const notifyContacts = () => {
