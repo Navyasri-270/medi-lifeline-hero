@@ -221,7 +221,7 @@ export function EnhancedMap({
                 onClick={(e) => {
                   e.stopPropagation();
                   window.open(
-                    `https://www.google.com/maps/dir/?api=1&destination=${nearbyHospitals[0].location.lat},${nearbyHospitals[0].location.lng}`,
+                    `https://www.openstreetmap.org/directions?to=${nearbyHospitals[0].location.lat},${nearbyHospitals[0].location.lng}`,
                     "_blank"
                   );
                 }}

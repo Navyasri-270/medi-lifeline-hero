@@ -24,7 +24,7 @@ export function SMSAlertSimulator({
 }: SMSAlertSimulatorProps) {
   const mapsLink = useMemo(() => {
     if (!location) return null;
-    return `https://maps.google.com/maps?q=${location.lat},${location.lng}`;
+    return `https://www.openstreetmap.org/?mlat=${location.lat}&mlon=${location.lng}#map=17/${location.lat}/${location.lng}`;
   }, [location]);
 
   const smsMessage = useMemo(() => {

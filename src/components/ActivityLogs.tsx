@@ -42,7 +42,7 @@ export function ActivityLogs() {
   };
 
   const openInMaps = (lat: number, lng: number) => {
-    window.open(`https://maps.google.com/maps?q=${lat},${lng}`, "_blank");
+    window.open(`https://www.openstreetmap.org/?mlat=${lat}&mlon=${lng}#map=17/${lat}/${lng}`, "_blank");
   };
 
   return (

@@ -16,9 +16,9 @@ export function LiveTrackingLink({ location, sosId, userName }: LiveTrackingLink
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
 
-  // Generate a simulated tracking link
+  // Generate a simulated tracking link using OpenStreetMap
   const trackingLink = location
-    ? `https://maps.google.com/maps?q=${location.lat},${location.lng}&z=17&layer=traffic`
+    ? `https://www.openstreetmap.org/?mlat=${location.lat}&mlon=${location.lng}#map=17/${location.lat}/${location.lng}`
     : null;
 
   // Generate a shareable link with context

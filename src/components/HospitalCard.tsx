@@ -29,7 +29,7 @@ export function HospitalCard({ hospital, className }: HospitalCardProps) {
   };
 
   const handleNavigate = () => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${hospital.location.lat},${hospital.location.lng}`;
+    const url = `https://www.openstreetmap.org/directions?to=${hospital.location.lat},${hospital.location.lng}`;
     window.open(url, "_blank");
   };
 
