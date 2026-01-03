@@ -1,12 +1,12 @@
 import { NavLink } from "@/components/NavLink";
-import { Activity, Home, MapPin, FileText, User } from "lucide-react";
+import { Home, FileText, User, Stethoscope, MapPin } from "lucide-react";
 
 const tabs = [
   { to: "/home", label: "Home", Icon: Home },
+  { to: "/symptom", label: "Symptoms", Icon: Stethoscope },
   { to: "/health-reports", label: "Reports", Icon: FileText },
+  { to: "/map", label: "Map", Icon: MapPin },
   { to: "/profile", label: "Profile", Icon: User },
-  { to: "/contacts", label: "Contacts", Icon: MapPin },
-  { to: "/dashboard", label: "Activity", Icon: Activity },
 ];
 
 export function BottomTabsNav() {
