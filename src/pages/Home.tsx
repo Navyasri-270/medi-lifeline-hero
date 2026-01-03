@@ -17,7 +17,7 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useFallDetection } from "@/hooks/useFallDetection";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import { useSeo } from "@/lib/seo";
-import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare, Activity, FileText, Stethoscope, MapPin } from "lucide-react";
+import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare, Activity, FileText, Stethoscope, MapPin, Users } from "lucide-react";
 
 export default function Home() {
   useSeo({
@@ -300,41 +300,41 @@ export default function Home() {
         </div>
 
         {/* Quick Access Cards */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/profile")}>
-            <CardContent className="py-4 text-center">
-              <Navigation className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Medical Profile</p>
+            <CardContent className="py-3 text-center">
+              <Navigation className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Profile</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/contacts")}>
-            <CardContent className="py-4 text-center">
-              <MessageSquare className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Contacts</p>
+            <CardContent className="py-3 text-center">
+              <MessageSquare className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Contacts</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/symptom")}>
-            <CardContent className="py-4 text-center">
-              <Stethoscope className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Symptom Analyzer</p>
+            <CardContent className="py-3 text-center">
+              <Stethoscope className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Symptoms</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/health-reports")}>
-            <CardContent className="py-4 text-center">
-              <FileText className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Health Reports</p>
+            <CardContent className="py-3 text-center">
+              <FileText className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Reports</p>
             </CardContent>
           </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/map")}>
-            <CardContent className="py-4 text-center">
-              <MapPin className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Live Map</p>
+            <CardContent className="py-3 text-center">
+              <MapPin className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Map</p>
             </CardContent>
           </Card>
-          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/dashboard")}>
-            <CardContent className="py-4 text-center">
-              <Activity className="h-6 w-6 mx-auto text-primary mb-2" />
-              <p className="text-sm font-medium">Activity Log</p>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/caregiver")}>
+            <CardContent className="py-3 text-center">
+              <Users className="h-5 w-5 mx-auto text-primary mb-1" />
+              <p className="text-xs font-medium">Caregiver</p>
             </CardContent>
           </Card>
         </div>

@@ -8,13 +8,15 @@ import { HospitalAcknowledgment } from "@/components/HospitalAcknowledgment";
 import { LiveTrackingLink } from "@/components/LiveTrackingLink";
 import { SMSAlertSimulator } from "@/components/SMSAlertSimulator";
 import { AmbulanceTracker } from "@/components/AmbulanceTracker";
+import { RealTimeSMSStatus } from "@/components/RealTimeSMSStatus";
+import { SymptomQuickSelect, getSymptomLabels } from "@/components/SymptomQuickSelect";
 import { getEmergencyLabel, type EmergencyType } from "@/components/EmergencyTypeSelector";
 import { useGeolocation } from "@/hooks/useGeolocation";
 import { useToast } from "@/hooks/use-toast";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import type { GeoPoint } from "@/state/medisos-types";
 import { useSeo } from "@/lib/seo";
-import { PhoneCall, Send, X, AlertTriangle } from "lucide-react";
+import { PhoneCall, Send, X, AlertTriangle, Share2 } from "lucide-react";
 
 function nearest(from: GeoPoint, points: GeoPoint[]) {
   let best = points[0];
@@ -33,7 +35,7 @@ function nearest(from: GeoPoint, points: GeoPoint[]) {
 
 export default function SosActive() {
   useSeo({
-    title: "SOS Active – Smart MediSOS",
+    title: "SOS Active – Medi SOS",
     description: "Active SOS screen with live location, countdown timer, and actions.",
     canonicalPath: "/sos",
   });
@@ -41,9 +43,11 @@ export default function SosActive() {
   const nav = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  const { contacts, hospitals, settings, profile } = useMediSOS();
+  const { contacts, hospitals, settings, profile, logSos } = useMediSOS();
   const { point } = useGeolocation();
   const [seconds, setSeconds] = useState(20);
+  const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+  const [smsActive, setSmsActive] = useState(false);
   
   const emergencyType = (location.state?.emergencyType as EmergencyType) || "general";
 
@@ -71,9 +75,36 @@ export default function SosActive() {
   };
 
   const notify = () => {
-    toast({ title: "Notified (demo)", description: settings.smsOnSos ? "SMS queued" : "Push queued" });
+    setSmsActive(true);
+    
+    // Log SOS with symptoms
+    logSos({
+      severity: "critical",
+      location: point ?? undefined,
+      contactsNotified: getSymptomLabels(selectedSymptoms),
+    });
+    
+    toast({ title: "Alerts Sent", description: `Notifying ${contacts.length} contacts with real-time status` });
     if (!settings.workModeEnabled) {
-      speak("Emergency contacts notified.");
+      speak("Emergency contacts notified. Help is on the way.");
+    }
+  };
+
+  const handleSymptomsChange = (symptoms: string[]) => {
+    setSelectedSymptoms(symptoms);
+  };
+
+  const shareLocation = () => {
+    const mapsLink = `https://www.openstreetmap.org/?mlat=${me.lat}&mlon=${me.lng}#map=17/${me.lat}/${me.lng}`;
+    if (navigator.share) {
+      navigator.share({
+        title: "Emergency Location - Medi SOS",
+        text: `🆘 EMERGENCY! ${profile.name || "User"} needs help!\n📍 Location: `,
+        url: mapsLink,
+      });
+    } else {
+      navigator.clipboard.writeText(mapsLink);
+      toast({ title: "Location copied", description: "Share link copied to clipboard" });
     }
   };
 
@@ -99,17 +130,29 @@ export default function SosActive() {
           </CardContent>
         </Card>
 
+        {/* Quick Symptom Selection */}
+        <SymptomQuickSelect 
+          onSymptomsChange={handleSymptomsChange}
+          selectedSymptoms={selectedSymptoms}
+        />
+
         {/* Ambulance Tracker */}
         <AmbulanceTracker isActive={true} />
 
         {/* Action Buttons */}
         <Card className="shadow-elevated">
-          <CardContent className="py-3 grid grid-cols-3 gap-2">
+          <CardContent className="py-3 grid grid-cols-4 gap-2">
             <Button variant="outline" onClick={() => (window.location.href = "tel:108")}> 
-              <PhoneCall className="h-4 w-4" /> 108
+              <PhoneCall className="h-4 w-4" />
+              <span className="sr-only md:not-sr-only md:ml-1">108</span>
             </Button>
             <Button variant="secondary" onClick={notify}>
-              <Send className="h-4 w-4" /> Notify
+              <Send className="h-4 w-4" />
+              <span className="sr-only md:not-sr-only md:ml-1">Notify</span>
+            </Button>
+            <Button variant="outline" onClick={shareLocation}>
+              <Share2 className="h-4 w-4" />
+              <span className="sr-only md:not-sr-only md:ml-1">Share</span>
             </Button>
             <Button
               variant="destructive"
@@ -118,10 +161,14 @@ export default function SosActive() {
                 nav("/home");
               }}
             >
-              <X className="h-4 w-4" /> Cancel
+              <X className="h-4 w-4" />
+              <span className="sr-only md:not-sr-only md:ml-1">Cancel</span>
             </Button>
           </CardContent>
         </Card>
+
+        {/* Real-Time SMS Status */}
+        <RealTimeSMSStatus contacts={contacts} isActive={smsActive} />
 
         {/* Live Tracking Link */}
         <LiveTrackingLink location={point} userName={profile.name} />
@@ -132,7 +179,12 @@ export default function SosActive() {
           polyline={polyline}
           markers={[
             { id: "me", point: me, label: "Patient", description: "Live location" },
-            ...hospitals.slice(0, 3).map((h) => ({ id: h.id, point: h.location, label: h.name, description: h.address })),
+            ...hospitals.slice(0, 5).map((h) => ({ 
+              id: h.id, 
+              point: h.location, 
+              label: h.name, 
+              description: `${h.distance?.toFixed(1) || "?"} km • ${h.eta || "N/A"}` 
+            })),
           ]}
           heightClassName="h-[16rem]"
           trackUser={true}
