@@ -21,6 +21,7 @@ import Dashboard from "@/pages/Dashboard";
 import MapHospitals from "@/pages/MapHospitals";
 import SosActive from "@/pages/SosActive";
 import HealthReports from "@/pages/HealthReports";
+import CaregiverDashboard from "@/pages/CaregiverDashboard";
 
 const queryClient = new QueryClient();
 
@@ -122,6 +123,14 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <SosActive />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/caregiver"
+                  element={
+                    <ProtectedRoute>
+                      <CaregiverDashboard />
                     </ProtectedRoute>
                   }
                 />

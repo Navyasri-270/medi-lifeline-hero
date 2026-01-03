@@ -3,10 +3,10 @@ import type { Hospital, HospitalAvailability } from "@/state/medisos-types";
 // Generate realistic hospital availability data
 function generateAvailability(): HospitalAvailability {
   return {
-    emergencyBeds: Math.floor(Math.random() * 8),
-    icuBeds: Math.floor(Math.random() * 5),
-    generalBeds: Math.floor(Math.random() * 30) + 5,
-    ambulancesAvailable: Math.floor(Math.random() * 4),
+    emergencyBeds: Math.floor(Math.random() * 8) + 1,
+    icuBeds: Math.floor(Math.random() * 5) + 1,
+    generalBeds: Math.floor(Math.random() * 30) + 10,
+    ambulancesAvailable: Math.floor(Math.random() * 4) + 1,
     lastUpdated: new Date().toISOString(),
   };
 }
@@ -21,7 +21,7 @@ function calculateETA(distanceKm: number): string {
   return `${hours}h ${mins}m`;
 }
 
-// Hyderabad-area hospitals with enhanced data
+// Extended Hyderabad-area hospitals - 15 hospitals for better 10km coverage
 export const HOSPITALS_DATA: Omit<Hospital, "distance" | "eta" | "availability">[] = [
   {
     id: "h1",
@@ -49,7 +49,7 @@ export const HOSPITALS_DATA: Omit<Hospital, "distance" | "eta" | "availability">
   },
   {
     id: "h4",
-    name: "Yashoda Hospital",
+    name: "Yashoda Hospital Somajiguda",
     phone: "+914027812345",
     type: "hospital",
     location: { lat: 17.4346, lng: 78.4982 },
@@ -87,9 +87,65 @@ export const HOSPITALS_DATA: Omit<Hospital, "distance" | "eta" | "availability">
     location: { lat: 17.3945, lng: 78.5012 },
     address: "Musheerabad, Hyderabad",
   },
+  {
+    id: "h9",
+    name: "Sunshine Hospital",
+    phone: "+914023456789",
+    type: "hospital",
+    location: { lat: 17.4456, lng: 78.3891 },
+    address: "Gachibowli, Hyderabad",
+  },
+  {
+    id: "h10",
+    name: "MaxCure Hospital",
+    phone: "+914066200200",
+    type: "hospital",
+    location: { lat: 17.4512, lng: 78.3834 },
+    address: "Madhapur, Hyderabad",
+  },
+  {
+    id: "h11",
+    name: "Medicover Hospital",
+    phone: "+914068885588",
+    type: "hospital",
+    location: { lat: 17.4389, lng: 78.4123 },
+    address: "Hitech City, Hyderabad",
+  },
+  {
+    id: "h12",
+    name: "AIG Hospitals",
+    phone: "+914066667777",
+    type: "hospital",
+    location: { lat: 17.4234, lng: 78.3678 },
+    address: "Gachibowli, Hyderabad",
+  },
+  {
+    id: "h13",
+    name: "Yashoda Hospital Malakpet",
+    phone: "+914024567890",
+    type: "hospital",
+    location: { lat: 17.3756, lng: 78.5089 },
+    address: "Malakpet, Hyderabad",
+  },
+  {
+    id: "h14",
+    name: "Care Hospital Hitech City",
+    phone: "+914044556677",
+    type: "hospital",
+    location: { lat: 17.4456, lng: 78.3789 },
+    address: "Hitech City, Hyderabad",
+  },
+  {
+    id: "h15",
+    name: "Rainbow Children's Hospital",
+    phone: "+914023445566",
+    type: "hospital",
+    location: { lat: 17.4312, lng: 78.4567 },
+    address: "Banjara Hills, Hyderabad",
+  },
 ];
 
-// Calculate distance between two points in km
+// Calculate distance between two points in km using Haversine formula
 export function haversineDistance(
   lat1: number, lng1: number, 
   lat2: number, lng2: number
@@ -106,26 +162,31 @@ export function haversineDistance(
 }
 
 // Get hospitals with real-time availability and distance calculations
+// Filters to only show hospitals within maxDistance km
 export function getHospitalsWithAvailability(
   userLat: number = 17.385044, 
-  userLng: number = 78.486671
+  userLng: number = 78.486671,
+  maxDistance: number = 10 // Default 10km radius
 ): Hospital[] {
-  return HOSPITALS_DATA.map(hospital => {
-    const distance = haversineDistance(
-      userLat, userLng,
-      hospital.location.lat, hospital.location.lng
-    );
-    
-    return {
-      ...hospital,
-      availability: generateAvailability(),
-      distance,
-      eta: calculateETA(distance),
-    };
-  }).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  return HOSPITALS_DATA
+    .map(hospital => {
+      const distance = haversineDistance(
+        userLat, userLng,
+        hospital.location.lat, hospital.location.lng
+      );
+      
+      return {
+        ...hospital,
+        availability: generateAvailability(),
+        distance,
+        eta: calculateETA(distance),
+      };
+    })
+    .filter(hospital => (hospital.distance || 0) <= maxDistance)
+    .sort((a, b) => (a.distance || 0) - (b.distance || 0));
 }
 
-// Simulate real-time updates (for polling)
+// Simulate real-time availability updates (for polling)
 export function simulateAvailabilityUpdate(hospitals: Hospital[]): Hospital[] {
   return hospitals.map(h => ({
     ...h,
@@ -133,7 +194,30 @@ export function simulateAvailabilityUpdate(hospitals: Hospital[]): Hospital[] {
       ...h.availability!,
       emergencyBeds: Math.max(0, (h.availability?.emergencyBeds || 0) + (Math.random() > 0.5 ? 1 : -1)),
       icuBeds: Math.max(0, (h.availability?.icuBeds || 0) + (Math.random() > 0.7 ? 1 : -1)),
+      ambulancesAvailable: Math.max(0, Math.min(5, (h.availability?.ambulancesAvailable || 0) + (Math.random() > 0.5 ? 1 : -1))),
       lastUpdated: new Date().toISOString(),
     },
   }));
+}
+
+// Get all hospitals regardless of distance (for map view)
+export function getAllHospitals(
+  userLat: number = 17.385044, 
+  userLng: number = 78.486671
+): Hospital[] {
+  return HOSPITALS_DATA
+    .map(hospital => {
+      const distance = haversineDistance(
+        userLat, userLng,
+        hospital.location.lat, hospital.location.lng
+      );
+      
+      return {
+        ...hospital,
+        availability: generateAvailability(),
+        distance,
+        eta: calculateETA(distance),
+      };
+    })
+    .sort((a, b) => (a.distance || 0) - (b.distance || 0));
 }
