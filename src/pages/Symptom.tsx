@@ -65,9 +65,10 @@ export default function Symptom() {
   // Set age group from profile
   useEffect(() => {
     if (profile.age) {
-      if (profile.age < 18) setAgeGroup("child");
-      else if (profile.age < 40) setAgeGroup("adult");
-      else if (profile.age < 60) setAgeGroup("middle");
+      if (profile.age <= 2) setAgeGroup("infant");
+      else if (profile.age <= 12) setAgeGroup("child");
+      else if (profile.age <= 18) setAgeGroup("teen");
+      else if (profile.age <= 59) setAgeGroup("adult");
       else setAgeGroup("senior");
     }
   }, [profile.age]);
@@ -191,12 +192,10 @@ export default function Symptom() {
                     <SelectValue placeholder="How long?" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="just_started">Just started</SelectItem>
-                    <SelectItem value="few_hours">Few hours</SelectItem>
-                    <SelectItem value="1_day">1 day</SelectItem>
-                    <SelectItem value="2_3_days">2-3 days</SelectItem>
-                    <SelectItem value="week">About a week</SelectItem>
-                    <SelectItem value="chronic">Ongoing/Chronic</SelectItem>
+                    <SelectItem value="less_than_1_hour">&lt; 1 hour</SelectItem>
+                    <SelectItem value="1_to_6_hours">1-6 hours</SelectItem>
+                    <SelectItem value="6_to_24_hours">6-24 hours</SelectItem>
+                    <SelectItem value="more_than_24_hours">&gt; 24 hours</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -208,9 +207,10 @@ export default function Symptom() {
                     <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="child">Child (0-17)</SelectItem>
-                    <SelectItem value="adult">Adult (18-39)</SelectItem>
-                    <SelectItem value="middle">Middle-age (40-59)</SelectItem>
+                    <SelectItem value="infant">Infant (0-2)</SelectItem>
+                    <SelectItem value="child">Child (3-12)</SelectItem>
+                    <SelectItem value="teen">Teen (13-18)</SelectItem>
+                    <SelectItem value="adult">Adult (19-59)</SelectItem>
                     <SelectItem value="senior">Senior (60+)</SelectItem>
                   </SelectContent>
                 </Select>

@@ -10,7 +10,7 @@ import { useMediSOS } from "@/state/MediSOSProvider";
 import { haversineDistance } from "@/data/hospitals";
 import type { GeoPoint } from "@/state/medisos-types";
 import { useSeo } from "@/lib/seo";
-import { LocateFixed, PhoneCall, Ambulance, Clock, MapPin } from "lucide-react";
+import { LocateFixed, PhoneCall, Ambulance, Clock, MapPin, Navigation } from "lucide-react";
 
 const MAX_DISTANCE_KM = 10;
 
@@ -238,13 +238,27 @@ export default function MapHospitals() {
                       )}
                     </div>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => (window.location.href = `tel:${h.phone}`)}
-                  >
-                    <PhoneCall className="h-4 w-4" />
-                  </Button>
+                  <div className="flex flex-col gap-1">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => (window.location.href = `tel:${h.phone}`)}
+                      title="Call"
+                    >
+                      <PhoneCall className="h-4 w-4" />
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      size="sm"
+                      onClick={() => {
+                        const url = `https://www.openstreetmap.org/directions?from=${user.lat},${user.lng}&to=${h.location.lat},${h.location.lng}`;
+                        window.open(url, "_blank");
+                      }}
+                      title="Get Directions"
+                    >
+                      <Navigation className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))
             )}

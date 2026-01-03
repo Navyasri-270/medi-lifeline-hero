@@ -17,7 +17,7 @@ import { useNetworkStatus } from "@/hooks/useNetworkStatus";
 import { useFallDetection } from "@/hooks/useFallDetection";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
 import { useSeo } from "@/lib/seo";
-import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare, Activity, FileText } from "lucide-react";
+import { Navigation, PhoneCall, Siren, WifiOff, MessageSquare, Activity, FileText, Stethoscope, MapPin } from "lucide-react";
 
 export default function Home() {
   useSeo({
@@ -313,6 +313,12 @@ export default function Home() {
               <p className="text-sm font-medium">Contacts</p>
             </CardContent>
           </Card>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/symptom")}>
+            <CardContent className="py-4 text-center">
+              <Stethoscope className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Symptom Analyzer</p>
+            </CardContent>
+          </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/health-reports")}>
             <CardContent className="py-4 text-center">
               <FileText className="h-6 w-6 mx-auto text-primary mb-2" />
@@ -321,8 +327,14 @@ export default function Home() {
           </Card>
           <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/map")}>
             <CardContent className="py-4 text-center">
-              <Siren className="h-6 w-6 mx-auto text-primary mb-2" />
+              <MapPin className="h-6 w-6 mx-auto text-primary mb-2" />
               <p className="text-sm font-medium">Live Map</p>
+            </CardContent>
+          </Card>
+          <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => nav("/dashboard")}>
+            <CardContent className="py-4 text-center">
+              <Activity className="h-6 w-6 mx-auto text-primary mb-2" />
+              <p className="text-sm font-medium">Activity Log</p>
             </CardContent>
           </Card>
         </div>
