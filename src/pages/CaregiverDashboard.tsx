@@ -1,11 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MobilePage } from "@/components/MobileShell";
-import { LeafletMap } from "@/components/LeafletMap";
+import { LeafletMap, type MapMarker } from "@/components/LeafletMap";
+import { HospitalList } from "@/components/HospitalList";
 import { useMediSOS } from "@/state/MediSOSProvider";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { useAmbulanceTracking } from "@/hooks/useAmbulanceTracking";
+import { getHospitalsWithAvailability } from "@/data/hospitals";
 import { useSeo } from "@/lib/seo";
 import { 
   MapPin, 
@@ -17,7 +20,8 @@ import {
   Clock,
   Phone,
   Shield,
-  Eye
+  Eye,
+  Ambulance
 } from "lucide-react";
 import type { SosLog } from "@/state/medisos-types";
 
@@ -39,6 +43,52 @@ export default function CaregiverDashboard() {
   }, [logs]);
 
   const userLocation = point ?? { lat: 17.385044, lng: 78.486671 };
+
+  // Ambulance tracking (only when SOS is active)
+  const { assignedAmbulance, ambulances } = useAmbulanceTracking(
+    activeLog ? userLocation : null,
+    !!activeLog
+  );
+
+  // Nearby hospitals
+  const nearbyHospitals = useMemo(() => {
+    return getHospitalsWithAvailability(userLocation.lat, userLocation.lng, 10);
+  }, [userLocation.lat, userLocation.lng]);
+
+  // Map markers
+  const mapMarkers = useMemo((): MapMarker[] => {
+    const markers: MapMarker[] = [
+      { 
+        id: "user", 
+        point: userLocation, 
+        label: profile.name || "User",
+        description: "Current location",
+        icon: "user"
+      }
+    ];
+
+    if (assignedAmbulance) {
+      markers.push({
+        id: assignedAmbulance.id,
+        point: assignedAmbulance.location,
+        label: `🚑 ${assignedAmbulance.id}`,
+        description: `ETA: ${assignedAmbulance.eta} min`,
+        icon: "ambulance"
+      });
+    }
+
+    nearbyHospitals.slice(0, 3).forEach((h) => {
+      markers.push({
+        id: h.id,
+        point: h.location,
+        label: h.name,
+        description: `${h.distance?.toFixed(1)} km`,
+        icon: "hospital"
+      });
+    });
+
+    return markers;
+  }, [userLocation, assignedAmbulance, nearbyHospitals, profile.name]);
 
   return (
     <MobilePage 
@@ -100,6 +150,43 @@ export default function CaregiverDashboard() {
           </CardContent>
         </Card>
 
+        {/* Ambulance Tracking (only when SOS active) */}
+        {activeLog && assignedAmbulance && (
+          <Card className="shadow-elevated border-primary/30">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Ambulance className="h-4 w-4 text-primary" />
+                Assigned Ambulance
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {assignedAmbulance.status.replace("_", " ")}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">{assignedAmbulance.id}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Driver: {assignedAmbulance.driverName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {assignedAmbulance.vehicleNumber}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="flex items-center gap-1 text-xl font-bold text-primary">
+                    <Clock className="h-4 w-4" />
+                    {assignedAmbulance.eta} min
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {assignedAmbulance.distance.toFixed(1)} km away
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Live Location */}
         <Card className="shadow-elevated">
           <CardHeader className="pb-2">
@@ -115,16 +202,10 @@ export default function CaregiverDashboard() {
           <CardContent className="p-0">
             <LeafletMap
               center={userLocation}
-              markers={[
-                { 
-                  id: "user", 
-                  point: userLocation, 
-                  label: profile.name || "User",
-                  description: "Current location"
-                }
-              ]}
+              markers={mapMarkers}
               heightClassName="h-48"
               trackUser={true}
+              showFallback={true}
             />
             <div className="p-3 bg-muted/30">
               <p className="text-xs text-muted-foreground">
@@ -137,6 +218,16 @@ export default function CaregiverDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Nearby Hospitals (when SOS active) */}
+        {activeLog && (
+          <HospitalList
+            hospitals={nearbyHospitals}
+            userLocation={point}
+            maxDisplay={5}
+            compact={true}
+          />
+        )}
 
         {/* Medical Profile */}
         <Card className="shadow-elevated">
