@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,12 +13,15 @@ import { SMSAlertSimulator } from "@/components/SMSAlertSimulator";
 import { RealTimeSMSStatus } from "@/components/RealTimeSMSStatus";
 import { SymptomQuickSelect, getSymptomLabels } from "@/components/SymptomQuickSelect";
 import { getEmergencyLabel, type EmergencyType } from "@/components/EmergencyTypeSelector";
+import { EmergencyRecorder } from "@/components/EmergencyRecorder";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { useAmbulanceTracking } from "@/hooks/useAmbulanceTracking";
+import { useAmbulanceTracking, type AmbulanceStatus } from "@/hooks/useAmbulanceTracking";
+import { useHospitalRealtime } from "@/hooks/useHospitalRealtime";
+import { useNotifications } from "@/hooks/useNotifications";
 import { useToast } from "@/hooks/use-toast";
 import { speak, useMediSOS } from "@/state/MediSOSProvider";
-import { getHospitalsWithAvailability } from "@/data/hospitals";
-import type { GeoPoint, Hospital } from "@/state/medisos-types";
+import type { GeoPoint } from "@/state/medisos-types";
 import { useSeo } from "@/lib/seo";
 import { 
   PhoneCall, 
@@ -28,7 +31,8 @@ import {
   Share2, 
   Ambulance,
   Clock,
-  MapPin
+  MapPin,
+  Mic
 } from "lucide-react";
 
 const MAX_DISTANCE_KM = 10;
@@ -62,11 +66,49 @@ export default function SosActive() {
     isTracking 
   } = useAmbulanceTracking(userLocation, sosActive);
 
-  // Get nearby hospitals within 10km
-  const nearbyHospitals = useMemo(() => {
-    if (!userLocation) return [];
-    return getHospitalsWithAvailability(userLocation.lat, userLocation.lng, MAX_DISTANCE_KM);
-  }, [userLocation]);
+  // Notifications with sound alerts
+  const {
+    notifySosTrigger,
+    notifyAmbulanceDispatched,
+    notifyAmbulanceArriving,
+    notifyAmbulanceArrived,
+    notifyContactNotified,
+  } = useNotifications();
+
+  // Real-time hospital availability
+  const {
+    hospitals: nearbyHospitals,
+    lastUpdate: hospitalsLastUpdate,
+  } = useHospitalRealtime({
+    userLat: userLocation?.lat,
+    userLng: userLocation?.lng,
+    maxDistance: MAX_DISTANCE_KM,
+    enabled: sosActive,
+  });
+
+  // Track previous ambulance status for notifications
+  const prevAmbulanceStatusRef = useRef<AmbulanceStatus | null>(null);
+
+  // Convert database hospitals to Hospital type
+  const hospitalsForDisplay = useMemo(() => {
+    return nearbyHospitals.map(h => ({
+      id: h.hospital_id,
+      name: h.hospital_name,
+      phone: h.phone || "",
+      type: "hospital" as const,
+      location: { lat: h.latitude, lng: h.longitude },
+      address: h.address || "",
+      availability: {
+        emergencyBeds: h.emergency_beds,
+        icuBeds: h.icu_beds,
+        generalBeds: h.general_beds,
+        ambulancesAvailable: h.ambulances_available,
+        lastUpdated: h.updated_at,
+      },
+      distance: h.distance,
+      eta: h.eta,
+    }));
+  }, [nearbyHospitals]);
 
   // Update user location with continuous tracking
   useEffect(() => {
@@ -183,7 +225,7 @@ export default function SosActive() {
     }
 
     // Add nearby hospitals (up to 8)
-    nearbyHospitals.slice(0, 8).forEach((h) => {
+    hospitalsForDisplay.slice(0, 8).forEach((h) => {
       markers.push({
         id: h.id,
         point: h.location,
@@ -194,7 +236,7 @@ export default function SosActive() {
     });
 
     return markers;
-  }, [currentLocation, assignedAmbulance, nearbyHospitals]);
+  }, [currentLocation, assignedAmbulance, hospitalsForDisplay]);
 
   return (
     <MobilePage
@@ -250,6 +292,9 @@ export default function SosActive() {
           onSymptomsChange={handleSymptomsChange}
           selectedSymptoms={selectedSymptoms}
         />
+
+        {/* Emergency Audio Recording */}
+        <EmergencyRecorder autoStart={false} />
 
         {/* Live Ambulance Tracker */}
         <LiveAmbulanceTracker 
@@ -313,7 +358,7 @@ export default function SosActive() {
 
         {/* Nearby Hospitals List (always visible) */}
         <HospitalList
-          hospitals={nearbyHospitals}
+          hospitals={hospitalsForDisplay}
           userLocation={userLocation}
           maxDisplay={12}
           compact={true}
@@ -328,7 +373,7 @@ export default function SosActive() {
           onCallContact={handleCallContact}
         />
 
-        <HospitalAcknowledgment hospitals={nearbyHospitals.slice(0, 3)} />
+        <HospitalAcknowledgment hospitals={hospitalsForDisplay.slice(0, 3)} />
       </section>
     </MobilePage>
   );

@@ -86,6 +86,57 @@ export type Database = {
         }
         Relationships: []
       }
+      hospital_availability: {
+        Row: {
+          address: string | null
+          ambulances_available: number
+          created_at: string
+          emergency_beds: number
+          general_beds: number
+          hospital_id: string
+          hospital_name: string
+          icu_beds: number
+          id: string
+          is_accepting_emergency: boolean
+          latitude: number
+          longitude: number
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          ambulances_available?: number
+          created_at?: string
+          emergency_beds?: number
+          general_beds?: number
+          hospital_id: string
+          hospital_name: string
+          icu_beds?: number
+          id?: string
+          is_accepting_emergency?: boolean
+          latitude: number
+          longitude: number
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          ambulances_available?: number
+          created_at?: string
+          emergency_beds?: number
+          general_beds?: number
+          hospital_id?: string
+          hospital_name?: string
+          icu_beds?: number
+          id?: string
+          is_accepting_emergency?: boolean
+          latitude?: number
+          longitude?: number
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           age: number | null
@@ -175,6 +226,44 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      sos_recordings: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          file_size_bytes: number | null
+          id: string
+          recording_url: string
+          sos_log_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          file_size_bytes?: number | null
+          id?: string
+          recording_url: string
+          sos_log_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          file_size_bytes?: number | null
+          id?: string
+          recording_url?: string
+          sos_log_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_recordings_sos_log_id_fkey"
+            columns: ["sos_log_id"]
+            isOneToOne: false
+            referencedRelation: "sos_logs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       symptom_checks: {
         Row: {
