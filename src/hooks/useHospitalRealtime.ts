@@ -147,8 +147,15 @@ export function useHospitalRealtime(options: UseHospitalRealtimeOptions = {}) {
     fetchHospitals();
   }, [userLat, userLng, maxDistance]);
 
-  // Simulate availability changes (for demo purposes)
+  // Simulate availability changes (for demo/development purposes ONLY)
+  // This function is disabled in production for security
   const simulateUpdate = useCallback(async (hospitalId: string) => {
+    // Only allow simulation in development mode
+    if (!import.meta.env.DEV) {
+      console.warn('Hospital simulation is disabled in production');
+      return;
+    }
+
     const hospital = hospitals.find(h => h.hospital_id === hospitalId);
     if (!hospital) return;
 

@@ -183,18 +183,17 @@ export function useEmergencyRecording(sosLogId?: string) {
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('health-reports')
-        .getPublicUrl(`recordings/${fileName}`);
+      // Store only the file path (not full URL) for security
+      // Signed URLs will be generated on-demand when accessing recordings
+      const recordingPath = `recordings/${fileName}`;
 
-      // Save metadata to database
+      // Save metadata to database with file path only
       const { data: recordingData, error: dbError } = await supabase
         .from('sos_recordings')
         .insert({
           user_id: user.id,
           sos_log_id: sosLogId || null,
-          recording_url: urlData.publicUrl,
+          recording_url: recordingPath, // Store path only, not full URL
           duration_seconds: state.duration,
           file_size_bytes: state.audioBlob.size,
         })

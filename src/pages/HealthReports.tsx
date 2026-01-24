@@ -122,10 +122,8 @@ export default function HealthReports() {
       
       if (uploadError) throw uploadError;
       
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("health-reports")
-        .getPublicUrl(fileName);
+      // Store only the file path (not the full URL) for security
+      // Signed URLs will be generated on-demand when viewing
       
       // Save report metadata to database
       const { error: dbError } = await supabase
@@ -133,7 +131,7 @@ export default function HealthReports() {
         .insert({
           user_id: user.id,
           name: selectedFile.name,
-          file_url: publicUrl,
+          file_url: fileName, // Store path only, not full URL
           file_type: selectedFile.type,
           report_type: reportType,
           report_date: reportDate,
@@ -164,13 +162,54 @@ export default function HealthReports() {
     }
   };
 
+  // Generate signed URL for secure file access (1 hour expiry)
+  const getSignedUrl = async (filePath: string): Promise<string | null> => {
+    const { data, error } = await supabase.storage
+      .from("health-reports")
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+    
+    if (error) {
+      console.error("Failed to generate signed URL:", error);
+      return null;
+    }
+    return data.signedUrl;
+  };
+
+  const handleViewReport = async (report: HealthReport) => {
+    const signedUrl = await getSignedUrl(report.file_url);
+    if (signedUrl) {
+      window.open(signedUrl, "_blank");
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Access Error",
+        description: "Failed to access the document. Please try again.",
+      });
+    }
+  };
+
+  const handleDownloadReport = async (report: HealthReport) => {
+    const signedUrl = await getSignedUrl(report.file_url);
+    if (signedUrl) {
+      const a = document.createElement("a");
+      a.href = signedUrl;
+      a.download = report.name;
+      a.click();
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Download Error",
+        description: "Failed to download the document. Please try again.",
+      });
+    }
+  };
+
   const handleDelete = async (report: HealthReport) => {
     if (!user) return;
     
     try {
-      // Extract file path from URL
-      const urlParts = report.file_url.split("/");
-      const filePath = `${user.id}/${urlParts[urlParts.length - 1]}`;
+      // file_url now stores the path directly
+      const filePath = report.file_url;
       
       // Delete from storage
       await supabase.storage.from("health-reports").remove([filePath]);
@@ -378,7 +417,7 @@ export default function HealthReports() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => window.open(report.file_url, "_blank")}
+                      onClick={() => handleViewReport(report)}
                       title="View"
                     >
                       <Eye className="h-4 w-4" />
@@ -386,12 +425,7 @@ export default function HealthReports() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => {
-                        const a = document.createElement("a");
-                        a.href = report.file_url;
-                        a.download = report.name;
-                        a.click();
-                      }}
+                      onClick={() => handleDownloadReport(report)}
                       title="Download"
                     >
                       <Download className="h-4 w-4" />
