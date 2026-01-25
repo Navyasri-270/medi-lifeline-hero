@@ -147,38 +147,11 @@ export function useHospitalRealtime(options: UseHospitalRealtimeOptions = {}) {
     fetchHospitals();
   }, [userLat, userLng, maxDistance]);
 
-  // Simulate availability changes (for demo/development purposes ONLY)
-  // This function is disabled in production for security
-  const simulateUpdate = useCallback(async (hospitalId: string) => {
-    // Only allow simulation in development mode
-    if (!import.meta.env.DEV) {
-      console.warn('Hospital simulation is disabled in production');
-      return;
-    }
-
-    const hospital = hospitals.find(h => h.hospital_id === hospitalId);
-    if (!hospital) return;
-
-    const { error } = await supabase
-      .from('hospital_availability')
-      .update({
-        emergency_beds: Math.max(0, hospital.emergency_beds + (Math.random() > 0.5 ? 1 : -1)),
-        icu_beds: Math.max(0, hospital.icu_beds + (Math.random() > 0.7 ? 1 : -1)),
-        ambulances_available: Math.max(0, Math.min(6, hospital.ambulances_available + (Math.random() > 0.5 ? 1 : -1))),
-      })
-      .eq('hospital_id', hospitalId);
-
-    if (error) {
-      console.error('Failed to simulate update:', error);
-    }
-  }, [hospitals]);
-
   return {
     hospitals,
     loading,
     error,
     lastUpdate,
     refetch: fetchHospitals,
-    simulateUpdate,
   };
 }
