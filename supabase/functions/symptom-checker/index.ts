@@ -101,13 +101,59 @@ serve(async (req) => {
       );
     }
 
-    const { symptoms, age, medicalHistory, followUpAnswers } = await req.json();
-    
-    if (!symptoms) {
+    let body;
+    try {
+      body = await req.json();
+    } catch {
       return new Response(
-        JSON.stringify({ error: 'Symptoms are required' }),
+        JSON.stringify({ error: 'Invalid JSON body' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
+    }
+
+    const { symptoms, age, medicalHistory, followUpAnswers } = body;
+
+    // Input validation
+    if (!symptoms || typeof symptoms !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Symptoms are required and must be a string' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (symptoms.length > 2000) {
+      return new Response(
+        JSON.stringify({ error: 'Symptoms description must be under 2000 characters' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (age !== undefined && age !== null) {
+      const ageNum = typeof age === 'string' ? parseInt(age, 10) : age;
+      if (typeof ageNum !== 'number' || isNaN(ageNum) || ageNum < 0 || ageNum > 150) {
+        return new Response(
+          JSON.stringify({ error: 'Age must be a number between 0 and 150' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (medicalHistory !== undefined && medicalHistory !== null) {
+      if (typeof medicalHistory !== 'string' || medicalHistory.length > 1000) {
+        return new Response(
+          JSON.stringify({ error: 'Medical history must be a string under 1000 characters' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    if (followUpAnswers !== undefined && followUpAnswers !== null) {
+      if (typeof followUpAnswers !== 'object' || JSON.stringify(followUpAnswers).length > 2000) {
+        return new Response(
+          JSON.stringify({ error: 'Follow-up answers are invalid or too large' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
