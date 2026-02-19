@@ -83,12 +83,13 @@ export default function Symptom() {
       return;
     }
 
-    if (!session && !isGuest) {
+    if (!session) {
       toast({
         title: "Authentication required",
         description: "Please log in to use the symptom checker.",
         variant: "destructive"
       });
+      nav("/auth");
       return;
     }
 
