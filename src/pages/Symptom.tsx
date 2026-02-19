@@ -17,7 +17,7 @@ import type { SymptomAnalysisResult, UrgencyLevel } from "@/state/medisos-types"
 import { 
   Mic, Send, Loader2, AlertTriangle, Clock, 
   CheckCircle, Phone, MapPin, Home, 
-  Stethoscope, MessageCircle, ShieldAlert
+  Stethoscope, MessageCircle, ShieldAlert, LogIn
 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useNavigate } from "react-router-dom";
@@ -164,6 +164,26 @@ export default function Symptom() {
   return (
     <MobilePage title={t("symptomChecker")}>
       <section className="space-y-4 pb-6">
+        {/* Login Required Banner */}
+        {!session && (
+          <Card className="border-destructive/50 bg-destructive/5">
+            <CardContent className="flex items-center gap-3 py-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-destructive/10">
+                <LogIn className="h-5 w-5 text-destructive" />
+              </div>
+              <div className="flex-1 space-y-1">
+                <p className="text-sm font-medium">Login required</p>
+                <p className="text-xs text-muted-foreground">
+                  Sign in to use the AI symptom checker
+                </p>
+              </div>
+              <Button size="sm" variant="destructive" onClick={() => nav("/auth")}>
+                Sign In
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Input Card */}
         <Card className="shadow-elevated">
           <CardHeader className="pb-3">
