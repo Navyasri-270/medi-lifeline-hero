@@ -1,4 +1,4 @@
 project_id = "ngseonmvijfuxjjmfini"
 
 [functions.symptom-checker]
-verify_jwt = true
+verify_jwt = false
